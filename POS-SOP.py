@@ -4,48 +4,59 @@ def generate_truth_table(num_vars):
     inputs = [0, 1]
     return [p for p in product(inputs, repeat=num_vars)]
 
-def truth_table_to_expr(truth_table, output_var, input_vars):
-    pos_terms = []
-    sop_terms = []
+def parse_output_expr(output_expr, input_vars):
+    output_expr = output_expr.strip()
+    if output_expr in input_vars:
+        return input_vars.index(output_expr), 1  # If output is one of the input variables
+    elif output_expr.startswith("!"):
+        if output_expr[1:] in input_vars:
+            return input_vars.index(output_expr[1:]), 0  # If output is a complement of an input variable
+    else:
+        terms = output_expr.split("*")
+        if len(terms) == 2:  # If output is a product of two input variables
+            if terms[0] in input_vars and terms[1] in input_vars:
+                return input_vars.index(terms[0]), input_vars.index(terms[1])
+        elif len(terms) > 2:  # If output is a complement of one or more products
+            complement_terms = []
+            product_terms = []
+            for term in terms:
+                if term.startswith("!"):
+                    if term[1:] in input_vars:
+                        complement_terms.append(input_vars.index(term[1:]))
+                else:
+                    if term in input_vars:
+                        product_terms.append(input_vars.index(term))
+            return complement_terms, product_terms
+    return None
 
-    for inputs in truth_table:
-        if inputs[output_var] == 1:
-            sop_terms.append("({})".format(" & ".join(["{}".format(input_vars[i] if bit else "!{}".format(input_vars[i])) for i, bit in enumerate(inputs)])))
-        else:
-            pos_terms.append("({})".format(" | ".join(["{}".format(input_vars[i] if bit else "!{}".format(input_vars[i])) for i, bit in enumerate(inputs)])))
-
-    pos_expr = " & ".join(pos_terms)
-    sop_expr = " | ".join(sop_terms)
-
-    return pos_expr, sop_expr
+def evaluate_output(inputs, output_spec):
+    if isinstance(output_spec, int):  # Output is one of the input variables
+        return inputs[output_spec]
+    elif isinstance(output_spec, tuple):  # Output is a product of two input variables
+        return inputs[output_spec[0]] and inputs[output_spec[1]]
+    elif isinstance(output_spec, list):  # Output is a complement of one or more products
+        product_result = all(inputs[term] for term in output_spec[1])
+        return not product_result
 
 def main():
     num_vars = int(input("Enter the number of input variables: "))
     input_vars = [input("Enter the name of variable {}: ".format(i + 1)) for i in range(num_vars)]
-    output_value = input("Enter the value of F({}): ".format(', '.join(input_vars)))
+    output_expr = input("Enter the output expression (e.g., 'x*y', '!x*y', 'x*y*z', '!x*y*z'): ")
 
-    truth_table = generate_truth_table(num_vars)
-    # Determine the output variable index based on user input
-    output_var = None
-    for i, var in enumerate(input_vars):
-        if var == output_value:
-            output_var = i
-            break
-    if output_var is None:
-        print("Output variable not found!")
+    output_spec = parse_output_expr(output_expr, input_vars)
+    if output_spec is None:
+        print("Invalid output expression.")
         return
 
-    pos_expr, sop_expr = truth_table_to_expr(truth_table, output_var, input_vars)
+    truth_table = generate_truth_table(num_vars)
 
     print("\nTruth Table:")
     print("Input Variables: ", input_vars)
-    print("Output Variable: ", input_vars[output_var])
+    print("Output Expression: ", output_expr)
     print("Output:")
     for inputs in truth_table:
-        print(inputs)
-
-    print("\nProduct of Sums (POS) Expression:", pos_expr)
-    print("Sum of Products (SOP) Expression:", sop_expr)
+        output_value = evaluate_output(inputs, output_spec)
+        print(inputs, "->", output_value)
 
 if __name__ == "__main__":
     main()
