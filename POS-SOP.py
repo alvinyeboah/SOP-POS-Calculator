@@ -1,64 +1,57 @@
-import tkinter as tk
+from itertools import product
 
-def parse_expression(expression):
-    # Parse the input expression into individual terms
-    # For example, if the input is "A + B + C", return ['A', 'B', 'C']
-    return expression.split('+')
+# Function to generate the truth table based on the number of input variables
+def generate_truth_table(num_vars):
+    inputs = [0, 1]  # Possible input values (0 and 1)
+    return [p for p in product(inputs, repeat=num_vars)]  # Generate all possible combinations of inputs
 
-def pos_to_sop(expression):
-    # Convert product of sum (POS) expression to sum of product (SOP) expression
-    # For example, if the input is ['A', 'B', 'C'], return [['A', 'B', 'C']]
-    return [parse_expression(expression)]
+# Function to convert the truth table into POS and SOP expressions
+def truth_table_to_expr(truth_table, output_var, input_vars):
+    pos_terms = []  # List to store terms for POS expression
+    sop_terms = []  # List to store terms for SOP expression
 
-def sop_to_pos(expression):
-    # Convert sum of product (SOP) expression to product of sum (POS) expression
-    # For example, if the input is [['A', 'B', 'C']], return ['A', 'B', 'C']
-    return expression[0]
+    # Iterate through each row of the truth table
+    for inputs in truth_table:
+        if inputs[output_var] == 1:  # If the output is 1 for this combination
+            # Create a term for SOP expression where input variable is included or excluded based on its value
+            sop_terms.append("({})".format(" & ".join(["{}".format(input_vars[i] if bit else "!{}".format(input_vars[i])) for i, bit in enumerate(inputs)])))
+        else:  # If the output is 0 for this combination
+            # Create a term for POS expression where input variable is included or excluded based on its value
+            pos_terms.append("({})".format(" | ".join(["{}".format(input_vars[i] if bit else "!{}".format(input_vars[i])) for i, bit in enumerate(inputs)])))
 
-def evaluate_expression(expression, values):
-    # Evaluate the expression using the given values for variables
-    # For example, if the expression is ['A', 'B', 'C'] and values is {'A': True, 'B': False, 'C': True},
-    # return the result of the expression evaluation
-    result = []
-    for term in expression:
-        term_value = all(values[var] if var.isupper() else not values[var.upper()] for var in term)
-        result.append(term_value)
-    return any(result)
+    # Combine all terms using AND operation for POS expression
+    pos_expr = " & ".join(pos_terms)
+    # Combine all terms using OR operation for SOP expression
+    sop_expr = " | ".join(sop_terms)
 
-def calculate_pos():
-    input_expression = input_entry.get()
-    parsed_expression = parse_expression(input_expression)
-    pos_expression = pos_to_sop(parsed_expression)
-    output_text.delete("1.0", tk.END)  # Clear previous result
-    output_text.insert(tk.END, "POS Expression: {}\n".format(' + '.join(['('.join(term) + ')' for term in pos_expression])))
+    return pos_expr, sop_expr
 
-def calculate_sop():
-    input_expression = input_entry.get()
-    parsed_expression = parse_expression(input_expression)
-    sop_expression = sop_to_pos(parsed_expression)
-    output_text.delete("1.0", tk.END)  # Clear previous result
-    output_text.insert(tk.END, "SOP Expression: {}\n".format(' * '.join(sop_expression)))
+# Main function to prompt user input and execute the logic
+def main():
+    # Ask user for the number of input variables
+    num_vars = int(input("Enter the number of input variables: "))
+    # Ask user for the names of input variables
+    input_vars = [input("Enter the name of variable {}: ".format(i + 1)) for i in range(num_vars)]
+    # Ask user for the index of the output variable (0-indexed)
+    output_var = int(input("Enter the index of the output variable (0-indexed): "))
 
-# Create main window
-root = tk.Tk()
-root.title("Discrete Structures Calculator")
+    # Generate the truth table based on user input
+    truth_table = generate_truth_table(num_vars)
+    # Convert the truth table into POS and SOP expressions
+    pos_expr, sop_expr = truth_table_to_expr(truth_table, output_var, input_vars)
 
-# Create input field
-input_label = tk.Label(root, text="Enter expression:")
-input_label.pack()
-input_entry = tk.Entry(root, width=40)
-input_entry.pack()
+    # Print the truth table
+    print("\nTruth Table:")
+    print("Input Variables: ", input_vars)
+    print("Output Variable: ", input_vars[output_var])
+    print("Output:")
+    for inputs in truth_table:
+        print(inputs)
 
-# Create buttons for POS and SOP
-pos_button = tk.Button(root, text="Product of Sum", command=calculate_pos)
-pos_button.pack()
-sop_button = tk.Button(root, text="Sum of Product", command=calculate_sop)
-sop_button.pack()
+    # Print the POS and SOP expressions
+    print("\nProduct of Sums (POS) Expression:", pos_expr)
+    print("Sum of Products (SOP) Expression:", sop_expr)
 
-# Create output field
-output_label = tk.Label(root, text="Result:")
-output_label.pack()
-output_text = tk.Text(root, width=40, height=5)
-output_text.pack()
-
-root.mainloop()
+# Execute the main function
+if __name__ == "__main__":
+    main()
