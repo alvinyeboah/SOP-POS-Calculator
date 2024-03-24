@@ -1,0 +1,116 @@
+def get_user_input(prompt):
+  """Gets user input with validation for yes/no answers."""
+  while True:
+    response = input(prompt + " (yes/no): ").lower()
+    if response in ("yes", "no"):
+      return response == "yes"
+    else:
+      print("Invalid input. Please enter yes or no.")
+
+
+def get_function_values(num_vars):
+  """Prompts the user to enter the function values for the truth table."""
+  function_values = []
+  for i in range(2**num_vars):
+    value = input(f"Enter the value for row {i+1} (0 or 1): ")
+    while value not in ("0", "1"):
+      value = input("Invalid input. Enter 0 or 1: ")
+    function_values.append(int(value))
+  return function_values
+
+
+def expand_sop(function_values, num_vars):
+    """Expands the Boolean function into sum-of-products (SOP) form.
+
+    Args:
+        function_values: A list of boolean values representing the function's
+                          output for each row in the truth table.
+        num_vars: The number of Boolean variables.
+
+    Returns:
+        A string representation of the SOP expression.
+    """
+
+    minterms = [i for i, value in enumerate(function_values) if value == 1]
+    product_terms = []
+    for minterm in minterms:
+        product_term = []
+        for i in range(num_vars):
+            if minterm & (1 << i):  # Check if variable is true in the minterm
+                product_term.append(f"x{i+1}")
+            else:
+                product_term.append(f"!x{i+1}")
+        product_terms.append(" * ".join(product_term))
+    sop_expression = " + ".join(product_terms)
+    return sop_expression
+
+
+def expand_pos(function_values, num_vars):
+    """Expands the Boolean function into product-of-sums (POS) form.
+
+    Args:
+        function_values: A list of boolean values representing the function's
+                          output for each row in the truth table.
+        num_vars: The number of Boolean variables.
+
+    Returns:
+        A string representation of the POS expression.
+    """
+
+    maxterms = [i for i, value in enumerate(function_values) if value == 0]
+    sum_terms = []
+    for maxterm in maxterms:
+        sum_term = []
+        for i in range(num_vars):
+            if maxterm & (1 << i):  # Check if variable is true in the maxterm (opposite)
+                sum_term.append(f"!x{i+1}")
+            else:
+                sum_term.append(f"x{i+1}")
+        sum_terms.append(" + ".join(sum_term))
+    pos_expression = " * ".join(sum_terms)
+    return pos_expression
+
+
+def main():
+  """Prompts user, calculates SOP and POS expansions, and displays results."""
+
+  while True:
+    try:
+      num_vars = int(input("Enter the number of variables (1-4): "))
+      if 1 <= num_vars <= 4:
+        break
+      else:
+        print("Number of variables must be between 1 and 4.")
+    except ValueError:
+      print("Invalid input. Please enter an integer.")
+
+  # Generate truth table
+  truth_table = []
+  for i in range(2**num_vars):
+    row = [int(x) for x in bin(i)[2:].zfill(num_vars)]  # Convert binary string to list of integers
+  truth_table.append(row)
+
+  function_values = get_function_values(num_vars)  # Call function_values after its definition
+
+
+  print("\nTruth Table:")
+  print("  ".join([f"x{i+1}" for i in range(num_vars)]), " |  Output")
+  for row, value in zip(truth_table, function_values):
+    print("  ".join(map(str, row)), f" |   {value}")
+    
+##This is to prompt the user to see if they want to view the sum-of-products and product-of-sum expansion
+  if get_user_input("Do you want to see the sum-of-products (SOP) expansion?"):
+    sop_expression = expand_sop(function_values, num_vars)
+    print("(The exclamation mark is used to represent x bar)\n The SOP Expression:")
+    print(sop_expression)
+
+  if get_user_input("Do you want to see the product-of-sums (POS) expansion?"):
+    pos_expression = expand_pos(function_values, num_vars)
+    print("(The exclamation mark is used to represent x bar)\n The POS Expression:")
+    print(pos_expression)
+
+
+if __name__ == "__main__":
+  main()
+
+    
